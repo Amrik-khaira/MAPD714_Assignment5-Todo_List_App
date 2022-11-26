@@ -3,7 +3,7 @@
 //  Author's name : Amrik Singh(301296257) and Hafiz Shaikh(301282061)
 //  StudentID :
 //
-//  Todo List app
+//  Todo List App - Part 2
 //
 //  Created by Amrik on 12/11/22.
 // Version: 1.0
@@ -31,13 +31,14 @@ class ViewController: UIViewController,UITableViewDelegate,UITableViewDataSource
 
     //MARK: - Load default data in dictionary
     func loadItems()  {
-        TodoArr =  [ToDoList.init(shorTitle: "Task Name", longDesc: "", isComplete: true, isDueDate: false, Date: ""),ToDoList.init(shorTitle: "Another Task Name", longDesc: "", isComplete: false, isDueDate: false, Date: ""),ToDoList.init(shorTitle: "Yet Another Task Name", longDesc: "", isComplete: false, isDueDate: true, Date: "Sunday, November 20,2022")]
+        TodoArr =  [ToDoList.init(shorTitle: "Task Name", longDesc: "", isComplete: true, isDueDate: false, strDate: ""),ToDoList.init(shorTitle: "Another Task Name", longDesc: "", isComplete: false, isDueDate: false, strDate: ""),ToDoList.init(shorTitle: "Yet Another Task Name", longDesc: "", isComplete: false, isDueDate: true, strDate: "Sunday, Nov 20,2022")]
+        
     }
     
     
     //MARK: - Add new item in Todo List
     @IBAction func btnAddNewTodoAct(_ sender: Any) {
-        TodoArr.append(ToDoList.init(shorTitle: "", longDesc: "", isComplete: false, isDueDate: false, Date: ""))
+        TodoArr.append(ToDoList.init(shorTitle: "", longDesc: "", isComplete: false, isDueDate: false, strDate: ""))
         openEditTodoList(index:IndexPath(row: TodoArr.count - 1, section: 0), addNewItem: true)
     }
     
@@ -51,6 +52,9 @@ class ViewController: UIViewController,UITableViewDelegate,UITableViewDataSource
      guard let cell = tableView.dequeueReusableCell(withIdentifier: "TodoCell", for: indexPath) as? TodoCell else {return UITableViewCell()}
         cell.selectionStyle = .none
         let objTodo = TodoArr[indexPath.row]
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMMM d,yyyy"
+        let toDate = dateFormatter.date(from: objTodo.strDate ?? "")
         
         if objTodo.isComplete ?? false
         {
@@ -62,19 +66,29 @@ class ViewController: UIViewController,UITableViewDelegate,UITableViewDataSource
         }
         else if objTodo.isDueDate ?? false
         {
+             if let comp = toDate , comp < Date()
+            {
+                cell.lblShortTitle.attributedText = NSAttributedString(string: objTodo.shorTitle ?? "")
+                cell.lblShortTitle.textColor = UIColor.red
+                cell.lblLongDes.textColor = UIColor.red
+                cell.lblLongDes.text = "Overdue! \(objTodo.strDate  ?? "")"
+                cell.SwitchTaskState.setOn(true, animated: false)
+            }
+            else
+            {
             cell.lblShortTitle.attributedText = NSAttributedString(string: objTodo.shorTitle ?? "")
-            cell.lblLongDes.text = objTodo.Date  ?? ""
+            cell.lblLongDes.text = objTodo.strDate  ?? ""
             cell.SwitchTaskState.setOn(true, animated: false)
             cell.lblShortTitle.textColor = UIColor.black
             cell.lblLongDes.textColor = UIColor.black
+            }
         }
-        else
-        {
+        else{
             cell.lblShortTitle.attributedText = NSAttributedString(string: objTodo.shorTitle ?? "")
-            cell.lblShortTitle.textColor = UIColor.red
-            cell.lblLongDes.textColor = UIColor.red
-            cell.lblLongDes.text = "Overdue!"
+            cell.lblLongDes.text = objTodo.strDate  ?? "" == "" ? objTodo.longDesc  ?? "": objTodo.strDate  ?? ""
             cell.SwitchTaskState.setOn(true, animated: false)
+            cell.lblShortTitle.textColor = UIColor.black
+            cell.lblLongDes.textColor = UIColor.black
         }
         
         cell.callbackforEditTask = {
@@ -92,21 +106,19 @@ class ViewController: UIViewController,UITableViewDelegate,UITableViewDataSource
         vc.toDoDict = TodoArr[index.row]
         vc.isAddNew = addNewItem
         vc.callbackforUpdateTodo = {
-           (dict,indexval, isdelete) in
+           (dict,indexval, isdelete, isSave) in
             if isdelete
             {
                 self.TodoArr.remove(at: indexval.row)
             }
-            else
+            else if isSave
             {
             guard let updatedTask = dict else { return  }
             self.TodoArr[indexval.row] = updatedTask
             }
             LocalStorage.shared.saveDataInPersistent(toDoArr: self.TodoArr)
             self.tblViwShopList.reloadData()
-            
             print("TodoArr count:",self.TodoArr.count)
-            
         }
         self.navigationController?.pushViewController(vc, animated: true)
        }
@@ -139,5 +151,5 @@ struct ToDoList:Codable {
     var longDesc : String?
     var isComplete : Bool?
     var isDueDate : Bool?
-    var Date : String?
+    var strDate : String?
 }

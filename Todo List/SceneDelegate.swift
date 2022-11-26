@@ -3,7 +3,7 @@
 //  Author's name : Amrik Singh
 //  StudentID : 301296257
 //
-//  Todo List app
+//  Todo List App - Part 2
 //
 //  Created by Amrik on 12/11/22.
 // Version: 1.0

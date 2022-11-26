@@ -491,6 +491,7 @@
                         <outlet property="ViwPicker" destination="8Mg-E2-d2e" id="sAQ-Qq-Zam"/>
                         <outlet property="ViwSave" destination="M23-nK-2Ye" id="cWt-1c-Ylg"/>
                         <outlet property="btnDelete" destination="m3D-9k-gCx" id="IUx-ba-NpJ"/>
+                        <outlet property="btnStoreTodoAct" destination="r34-xY-Ebl" id="e9Z-ta-gPx"/>
                         <outlet property="txtFieldTaskName" destination="v9D-au-ZAc" id="tmi-XY-qMJ"/>
                     </connections>
                 </viewController>

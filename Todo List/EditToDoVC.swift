@@ -3,7 +3,7 @@
 //  Author's name : Amrik Singh
 //  StudentID : 301296257
 //
-//  Todo List app
+//  Todo List App - Part 2
 //
 //  Created by Amrik on 13/11/22.
 // Version: 1.1
@@ -14,7 +14,7 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
     //MARK: - variables and connections
   var Index = IndexPath()
   var toDoDict = ToDoList()
-  var callbackforUpdateTodo:((ToDoList?,IndexPath,Bool) -> Void)?
+  var callbackforUpdateTodo:((ToDoList?,IndexPath,Bool,Bool) -> Void)?
     @IBOutlet weak var PickerSelectDate: UIDatePicker!
     @IBOutlet weak var ViwPicker: UIView!
     @IBOutlet weak var txtFieldTaskName: UITextField!
@@ -27,33 +27,35 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
     @IBOutlet weak var ViwIsComplete: UIView!
     @IBOutlet weak var ViwSave: UIView!
     @IBOutlet weak var btnDelete: UIButton!
+    @IBOutlet weak var btnStoreTodoAct: UIButton!
     
     var placeholderLabel : UILabel!
     var dateStr = ""
     var iscomplete = Bool()
     var isdue = Bool()
     var isAddNew = Bool()
+    var isAnyModification = Bool()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setUpUIForAddNewTodo(visible: isAddNew)
-        
         }
     
     //MARK: - UI Setup
     func setupUI() {
         print(toDoDict)
         TxtViewLongDesc.layer.borderColor = UIColor.gray.cgColor
-        TxtViewLongDesc.layer.borderWidth = 0.5
+        TxtViewLongDesc.layer.borderWidth = 0.2
         TxtViewLongDesc.layer.cornerRadius = 5.0
         iscomplete = toDoDict.isComplete ?? false
         isdue = toDoDict.isDueDate ?? false
-        dateStr = toDoDict.Date ?? ""
+        dateStr = toDoDict.strDate ?? ""
         txtFieldTaskName.text = toDoDict.shorTitle ?? ""
         SwitchDueDate.setOn(toDoDict.isDueDate ?? false, animated: false)
         SwitchIsCompleted.setOn(toDoDict.isComplete ?? false, animated: false)
         TxtViewLongDesc.textColor = UIColor.lightGray
+        btnStoreTodoAct.setTitle("\(isAddNew ? "Save" : "Update")", for: .normal)
         
         if toDoDict.isComplete ?? false
         {
@@ -67,23 +69,24 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
         if toDoDict.longDesc ?? "" == ""
         {
         TxtViewLongDesc.text = "Long Description of the Todo \nNotes can also be included here."
+        TxtViewLongDesc.textColor = UIColor.lightGray
         }
         else
         {
         TxtViewLongDesc.text = toDoDict.longDesc ?? ""
+        TxtViewLongDesc.textColor = UIColor.black
         }
-        
-        if let strdate = toDoDict.Date, strdate != ""
+        if let strdate = toDoDict.strDate, strdate != ""
         {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "EEEE, MMMM d,yyyy"
         PickerSelectDate.date = dateFormatter.date(from: strdate) ?? Date()
         }
+        txtFieldTaskName.becomeFirstResponder()
     }
         //MARK: - setUp View For Add New Todo Item
     func setUpUIForAddNewTodo(visible:Bool)
         {
-            ViwNotes.isHidden = visible
             ViwDue.isHidden = visible
             ViwIsComplete.isHidden = visible
             ViwSave.isHidden = visible
@@ -92,33 +95,61 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
     
     //MARK: - Btn Edit Action for Todo List
     @IBAction func BtnEditAct(_ sender: Any) {
-        
-        toDoDict = ToDoList.init(shorTitle: txtFieldTaskName.text, longDesc: TxtViewLongDesc.text, isComplete: iscomplete, isDueDate:isdue , Date: dateStr)
-        print(toDoDict)
-        callbackforUpdateTodo?(toDoDict,Index,false)
-        self.navigationController?.popViewController(animated: true)
+        displayAlertWithCompletion(title: "ToDo!", message: "Are sure wish to \(isAddNew ? "save" : "update") the Todo.", control: ["Cancel","\(isAddNew ? "Save" : "Update")"]) { str in
+            if str ==  "Save" || str == "Update"
+            {
+            self.saveTodo()
+         }
+     }
     }
+    
+    //MARK: - Save Todo clouser
+    func saveTodo() {
+        toDoDict = ToDoList.init(shorTitle: txtFieldTaskName.text, longDesc: TxtViewLongDesc.text, isComplete: iscomplete, isDueDate:isdue , strDate: dateStr)
+        callbackforUpdateTodo?(toDoDict,Index,false,true)
+        self.navigationController?.popViewController(animated: true)
+        }
     
     //MARK: - Btn Delete Action for Todo List
     @IBAction func BtnDeleteAct(_ sender: Any) {
-        
-        callbackforUpdateTodo?(toDoDict,Index,true)
-        self.navigationController?.popViewController(animated: true)
+        displayAlertWithCompletion(title: "ToDo!", message: "Are sure wish to delete the Todo.", control: ["Cancel","Delete"]) { str in
+        if str == "Delete"
+            {
+            self.callbackforUpdateTodo?(self.toDoDict,self.Index,true,false)
+            self.navigationController?.popViewController(animated: true)
+           }
+        }
     }
     
+    //MARK: - Btn Back Action for Todo detais screen
+    @IBAction func BtnBackAct(_ sender: Any){
+        if isAnyModification
+        {
+        displayAlertWithCompletion(title: "ToDo!", message: "Are sure wish to discard the changes.", control: ["Cancel","Save"]) { str in
+        if str == "Save"
+            {
+            self.saveTodo()
+           }
+        }
+        }
+        else{
+            self.callbackforUpdateTodo?(self.toDoDict,self.Index,self.isAddNew,false)
+            self.navigationController?.popViewController(animated: true)
+        }
+    }
+    
+    
     //MARK: - Picker Change Date Act(Picker handler)
-
     @IBAction func PickerChangeDateAct(_ sender: UIDatePicker) {
-        
+        self.isAnyModification = true
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "EEEE, MMMM d,yyyy"
         dateStr = dateFormatter.string(from: sender.date)
-       
-        
     }
     
     //MARK: - Todo Compelte Switch Act
     @IBAction func CompelteSwitchAct(_ sender: UISwitch) {
+        self.isAnyModification = true
         if sender.isOn
         {
             ViwPicker.isHidden = true
@@ -133,6 +164,7 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
     
     //MARK: - Set Due date
     @IBAction func DueSwitchAct(_ sender: UISwitch) {
+        self.isAnyModification = true
         if sender.isOn
         {
             ViwPicker.isHidden = false
@@ -148,34 +180,38 @@ class EditToDoVC: UIViewController,UITextFieldDelegate,UITextViewDelegate {
         
     }
     
-    
-    
-    //MARK: - Btn Back Action for Todo detais screen
-    @IBAction func BtnBackAct(_ sender: Any) {
-        callbackforUpdateTodo?(toDoDict,Index,true)
-        self.navigationController?.popViewController(animated: true)
-    }
-    
+
     //MARK: - UITextView Delegates for placeholder
     func textViewDidBeginEditing(_ textView: UITextView) {
 
         if textView.textColor == UIColor.lightGray {
             textView.text = ""
+            self.isAnyModification = true
             textView.textColor = UIColor.black
         }
     }
+    
     func textViewDidEndEditing(_ textView: UITextView) {
 
         if textView.text == "" {
-
             textView.text = "Long Description of the Todo Notes can also be included here."
             textView.textColor = UIColor.lightGray
         }
     }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        
+        if textField.text != ""
+        {
+            self.isAnyModification = true
+            setUpUIForAddNewTodo(visible: false)
+        }
+        
+    }
+    
     //MARK: - keyboard done button tapped
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {   //delegate method
-       
-            textField.resignFirstResponder()
+        textField.resignFirstResponder()
         
        return true
     }
